@@ -6,8 +6,8 @@ const { useQueue } = require('discord-player');
 module.exports = {
 	/**
      *
-     * @param {Client} client
-     * @param {Interaction} interaction
+     * @param {Client} client The discord bot client
+     * @param {Interaction} interaction The interaction (message) that triggered the command
      */
 	callback: async (client, interaction) => {
 		// Check if the user is in a voice channel
@@ -27,6 +27,7 @@ module.exports = {
 
 		// Case 1: A single song is provided
 		if (songQuery) {
+			// Search for the song, and add it to the queue
 			await client.player.search(songQuery)
 				.then(async data => {
 					const track = data.tracks[0];
@@ -39,6 +40,7 @@ module.exports = {
 
 		// Case 2: A link to a playlist is provided
 		if (playlistQuery) {
+			// Search for the playlist, and add all songs to the queue
 			await client.player.search(playlistQuery)
 				.then(async data => {
 					const tracks = data.tracks;
