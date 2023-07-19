@@ -3,7 +3,6 @@ const {
 } = require('discord.js');
 const { useQueue } = require('discord-player');
 
-
 module.exports = {
 	/**
      *
@@ -11,38 +10,67 @@ module.exports = {
      * @param {Interaction} interaction
      */
 	callback: async (client, interaction) => {
+		// Check if the user is in a voice channel
 		const channel = interaction.member.voice.channel;
 		if (!channel) return interaction.reply('You are not connected to a voice channel!');
-		const query = interaction.options.get('query')?.value;
 
-		// let's defer the interaction as things can take time to process
+		// Check if the bot has a queue created already for the guild
+		if (!useQueue(interaction.guild.id)) client.player.nodes.create(interaction.guild.id);
+		const queue = useQueue(interaction.guild.id);
+
+		// Get the song and playlist options
+		const songQuery = interaction.options.get('song')?.value;
+		const playlistQuery = interaction.options.get('playlist')?.value;
+
+		// Defers the response, as the bot is doing something that takes a while
 		await interaction.deferReply();
 
-		const queue = useQueue(interaction.guild.id);
-		if (queue) {
-			const track = await client.player.search(query);
-			const trackTitle = track._data.tracks[0].title;
-			queue.addTrack(track._data.tracks[0]);
-
-			if (!queue.isPlaying()) await queue.node.play();
-			return interaction.followUp(`**${trackTitle}** enqueued!`);
+		// Case 1: A single song is provided
+		if (songQuery) {
+			await client.player.search(songQuery)
+				.then(async data => {
+					const track = data.tracks[0];
+					queue.addTrack(track);
+					if (!queue.connection) await queue.connect(channel);
+					if (!queue.isPlaying()) await queue.node.play();
+					return interaction.followUp(`**${track.title}** enqueued!`);
+				});
 		}
-		else {
-			client.player.nodes.create(interaction.guild.id);
-			const { track } = await client.player.play(channel, query);
 
-			return interaction.followUp(`**${track.title}** enqueued!`);
+		// Case 2: A link to a playlist is provided
+		if (playlistQuery) {
+			await client.player.search(playlistQuery)
+				.then(async data => {
+					const tracks = data.tracks;
+					tracks.forEach(track => {
+						queue.addTrack(track);
+					});
+					if (!queue.connection) await queue.connect(channel);
+					if (!queue.isPlaying()) await queue.node.play();
+					return interaction.followUp('Playlist enqueued!');
+				});
+		}
+
+		// Case 3: No song or playlist is provided
+		if (!songQuery && !playlistQuery) {
+			return interaction.followUp('You must provide a song or playlist!');
 		}
 	},
 
 	name: 'play',
-	description: 'Play any song.',
+	description: 'Play any song or playlist.',
 	options: [
 		{
-			name: 'query',
-			description: 'Any form of song input (search/link).',
+			name: 'song',
+			description: 'Any form of **single** song input (search/link).',
 			type: ApplicationCommandOptionType.String,
-			required: true,
+			required: false,
+		},
+		{
+			name: 'playlist',
+			description: 'A link to a spotify playlist.',
+			type: ApplicationCommandOptionType.String,
+			required: false,
 		},
 	],
 };
