@@ -9,7 +9,19 @@ async function handleSongQuery(client, interaction, queue, channel, songQuery) {
 			queue.addTrack(track);
 			if (!queue.connection) await queue.connect(channel);
 			if (!queue.isPlaying()) await queue.node.play();
-			return interaction.followUp(`**${track.title}** enqueued!`);
+
+			const reply = new EmbedBuilder()
+				.setColor('DarkRed')
+				.setTitle('Song added!')
+				.setAuthor({ name: interaction.user.username, iconURL: interaction.user.avatarURL() })
+				.setDescription(`**${track.title}** added to the queue!`)
+				.setThumbnail(track.thumbnail)
+				.addFields(
+					{ name: 'Duration', value: `${track.duration}` },
+					{ name: 'Author', value: `${track.author}` },
+				)
+				.setFooter({ text: 'Powered by discord-player', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
+			return interaction.followUp({ embeds: [reply] });
 		});
 }
 
@@ -26,7 +38,7 @@ async function handlePlaylistQuery(client, interaction, queue, channel, playlist
 
 			// TODO: Add spotify integration
 			const reply = new EmbedBuilder()
-				.setColor(0x0099FF)
+				.setColor('DarkGreen')
 				.setTitle('Playlist enqueued!')
 				.setAuthor({ name: interaction.user.username, iconURL: interaction.user.avatarURL() })
 				.setDescription(`**${tracks.length}** songs added to the queue!`)
