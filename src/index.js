@@ -13,6 +13,7 @@ const client = new Client({
 	],
 });
 
+// Create a new music player instance
 const player = new Player(client);
 player.extractors.loadDefault();
 client.player = player;
